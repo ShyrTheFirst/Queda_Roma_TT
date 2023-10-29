@@ -109,7 +109,24 @@ class Villa(pygame.sprite.Sprite):
             self.max_enemy = score//4
             if self.max_enemy > 20:
                 self.max_enemy = 20
-        
+
+        enemies_in_range = [enemy for enemy in enemy_g if math.sqrt(pow(Tela_H//2 - enemy.rect.x, 2) + pow(Tela_V//2 - enemy.rect.y, 2)) < self.radius]
+        if len(enemies_in_range) > 0:
+            if len(shoot_g) < 1:
+                for enemy in enemies_in_range:
+                    self.shoot = Shoot(enemy)
+                    shoot_g.add(self.shoot)
+            shooting_collide = pygame.sprite.spritecollide(self.shoot, enemy_g, False)
+            if shooting_collide:
+                for sprites in shooting_collide:
+                    money += sprites.value
+                    sprites.kill()
+                    self.shoot.kill()
+                    score += 1
+                    break  # Pare após criar um tiro para um inimigo
+
+
+        '''
         if math.sqrt(pow(Tela_H//2 - enemy.rect.x, 2) + pow(Tela_V//2 - enemy.rect.y, 2)) < self.radius:
             if len(shoot_g) < 1:
                 for enemy in enemy_g:
@@ -123,11 +140,14 @@ class Villa(pygame.sprite.Sprite):
                     sprites.kill()
                     self.shoot.kill()
                 score += 1
+        
                 
         else:
             if len(enemy_g) < 1:
                 for shoots in shoot_g:
                     shoots.kill()
+
+    '''
             
             
             
@@ -162,6 +182,10 @@ class Shoot(pygame.sprite.Sprite):
             self.rect.y += dydef_final
             
             tela.blit(self.image, (self.rect.x,self.rect.y))
+
+            #Destruir tiros que não atingiram os alvos
+            if self.enemy not in enemy_g:
+                self.kill()
 
 
 class Upgrades(pygame.sprite.Sprite):
