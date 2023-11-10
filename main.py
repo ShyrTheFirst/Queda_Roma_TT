@@ -1,4 +1,4 @@
-import pygame, sys, random, math
+import pygame, sys, random, math, asyncio
 
 #Iniciar o pygame
 pygame.init()
@@ -52,23 +52,22 @@ class Enemy(pygame.sprite.Sprite):
     def update(self):
         global score
         if score > 1:
-            self.value = (score//2 * 3)//score
+            self.value = (score//2 * 3)
             self.damage = self.value
 
             min_speed = 1
             new_speed = score/100
-            max_speed = 3
-            if new_speed < min_speed :
-                self.speed = min_speed
-            elif new_speed > max_speed:
+            max_speed = 2.5            
+            if new_speed < 1:
+                new_speed += 1
+            if self.speed > max_speed:
                 self.speed = max_speed
-            else:
-                self.speed = new_speed
+            self.speed = new_speed
             
         player_pos = self.alvo
         enemy_pos = self.rect.center
         dx, dy = player_pos[0] - enemy_pos[0], player_pos[1] - enemy_pos[1]
-        dist = (dx ** 2 + dy ** 2) ** 0.5
+        dist = math.sqrt(dx ** 2 + dy ** 2) 
         if dist != 0:
             dx, dy = dx / dist, dy / dist
         self.dx, self.dy = dx * self.speed, dy * self.speed
@@ -87,14 +86,18 @@ class Villa(pygame.sprite.Sprite):
         self.max_enemy = 1 #### MUDAR A QUANTIDADE DE INIMIGOS AO MESMO TEMPO NA TELA
         self.health = 10
         self.max_health = 10
+        self.max_shoot = 1
 
     def update(self):
         global score
         circle = pygame.draw.circle(tela, self.circle_color, (Tela_H//2, Tela_V//2), self.radius, 1)
         if score > 2:
             if score % 2 == 0:
-                self.max_health = score * 2 // self.max_enemy
-                self.health = self.max_health
+                if self.health == self.max_health:
+                    self.max_health = score * 2 // self.max_enemy
+                    self.health = self.max_health
+                else:
+                    self.max_health = score * 2 // self.max_enemy
         
         if self.max_health > 200:
             self.max_health = 200
@@ -107,48 +110,23 @@ class Villa(pygame.sprite.Sprite):
         global score, money
         if score > 4:
             self.max_enemy = score//4
-            if self.max_enemy > 20:
-                self.max_enemy = 20
+            if self.max_enemy > 10:
+                self.max_enemy = 10
 
         enemies_in_range = [enemy for enemy in enemy_g if math.sqrt(pow(Tela_H//2 - enemy.rect.x, 2) + pow(Tela_V//2 - enemy.rect.y, 2)) < self.radius]
         if len(enemies_in_range) > 0:
-            if len(shoot_g) < 1:
+            if len(shoot_g) < self.max_shoot:
                 for enemy in enemies_in_range:
                     self.shoot = Shoot(enemy)
                     shoot_g.add(self.shoot)
+                    break  # Pare após criar um tiro para um inimigo
             shooting_collide = pygame.sprite.spritecollide(self.shoot, enemy_g, False)
             if shooting_collide:
                 for sprites in shooting_collide:
                     money += sprites.value
                     sprites.kill()
                     self.shoot.kill()
-                    score += 1
-                    break  # Pare após criar um tiro para um inimigo
-
-
-        '''
-        if math.sqrt(pow(Tela_H//2 - enemy.rect.x, 2) + pow(Tela_V//2 - enemy.rect.y, 2)) < self.radius:
-            if len(shoot_g) < 1:
-                for enemy in enemy_g:
-                    self.shoot = Shoot(enemy)
-                    shoot_g.add(self.shoot)
-                    break
-            shooting_collide = pygame.sprite.spritecollide(self.shoot,enemy_g,False)
-            if shooting_collide:
-                for sprites in shooting_collide:
-                    money += sprites.value
-                    sprites.kill()
-                    self.shoot.kill()
-                score += 1
-        
-                
-        else:
-            if len(enemy_g) < 1:
-                for shoots in shoot_g:
-                    shoots.kill()
-
-    '''
-            
+                    score += 1         
             
             
 
@@ -189,7 +167,7 @@ class Shoot(pygame.sprite.Sprite):
 
 
 class Upgrades(pygame.sprite.Sprite):
-    def __init__(self,villa,x,y,typeup):
+    def __init__(self,villa,x,y,typeup,custo=5):
         super().__init__()
         self.image = pygame.image.load(r'botao.png').convert_alpha()
         self.rect = self.image.get_rect()
@@ -198,7 +176,7 @@ class Upgrades(pygame.sprite.Sprite):
         self.villa = villa
         self.typeup = typeup
         self.nivel = 1
-        self.custo = 5
+        self.custo = custo
         
 
     def update(self):
@@ -207,15 +185,18 @@ class Upgrades(pygame.sprite.Sprite):
             self.image = pygame.image.load(r'botao_speed.png')
             custo_text = font.render('Cost: ' + str(self.custo), True, (100,100,100))
             tela.blit(custo_text, (self.rect.x + 70, self.rect.y))
-            '''score_text = font.render('Score: ' + str(score), True, (100,100,100))
-    tela.blit(score_text, (Tela_V - score_text.get_width()-50, 10))
-    '''
             if self.custo > money:
                 pass ####Mudar imagem dos botoes
         if self.typeup == 'Radius':
             self.image = pygame.image.load(r'botao_radius.png')
-            custo_text = font.render('Custo: ' + str(self.custo), True, (100,100,100))
+            custo_text = font.render('Cost: ' + str(self.custo), True, (100,100,100))
             tela.blit(custo_text, (self.rect.x + 70, self.rect.y))
+            if self.custo > money:
+                pass ####Mudar imagem dos botoes
+        if self.typeup == 'Health':
+            self.image = pygame.image.load(r'botao_health.png')
+            custo_text = font.render('Cost:' + str(self.custo), True, (100,100,100))
+            tela.blit(custo_text, (self.rect.x +70, self.rect.y))
             if self.custo > money:
                 pass ####Mudar imagem dos botoes
 
@@ -229,23 +210,34 @@ class Upgrades(pygame.sprite.Sprite):
                 if self.typeup == 'Speed' :
                     if money >= self.custo :
                         money -= self.custo
-                        self.custo += self.nivel * (2 + score)//self.nivel
+                        self.custo += self.nivel ** 2
                         self.nivel += 1
                         shoot_speed += 1
-                        ####RETORNO VISUAL DA COMPRA
-                        print("Comprou speed")
+                        ####RETORNO VISUAL E SONORO DA COMPRA
                     elif money < self.custo:
                         pass
+                    
                 elif self.typeup == 'Radius':
                     if money >= self.custo :
                         money -= self.custo
-                        self.custo += self.nivel * (10 + score)//self.nivel
+                        self.custo += self.nivel ** 2
                         self.nivel += 1
                         self.villa.radius += 10
-                        ####RETORNO VISUAL DA COMPRA
-                        print("Comprou radius")
+                        ####RETORNO VISUAL E SONORO DA COMPRA
                     elif money < self.custo:
                         pass
+                    
+                elif self.typeup == 'Health':
+                    if money >= self.custo :
+                        money -= self.custo
+                        self.custo += self.nivel ** 2
+                        self.nivel += 1
+                        self.villa.health += self.villa.max_health
+                        ####RETORNO VISUAL E SONORO DA COMPRA
+                    elif money < self.custo:
+                        pass
+
+            
             
 
 
@@ -254,86 +246,101 @@ class Upgrades(pygame.sprite.Sprite):
 
 
 #Inicializar classes
-enemy_a = Enemy(random.randint(-100,-1),random.randint(0,719),enemy_speed)
-enemy_g.add(enemy_a)
-
 villa_a = Villa()
 villa_g.add(villa_a)
 
 upgrades_a1 = Upgrades(villa_a,10,10, 'Speed')
 upgrades_a2 = Upgrades(villa_a,10,80, 'Radius')
+upgrades_a3 = Upgrades(villa_a,10,150, 'Health', custo=1)
 upgrades_g.add(upgrades_a1)
 upgrades_g.add(upgrades_a2)
+upgrades_g.add(upgrades_a3)
 
-#Rodar loop do jogo
-while running:    
-    #Preencher tela do jogo
-    tela.fill((100,0,0)) 
+#Definições para o pygbag
+async def main():
+    #Rodar loop do jogo
+    while running:    
+        #Preencher tela do jogo
+        tela.fill((100,0,0)) 
 
-    #Detectar eventos do pygame
-    for event in pygame.event.get():
-      if event.type == pygame.QUIT:
-         pygame.quit()
-         sys.exit()
+        #Detectar eventos do pygame
+        for event in pygame.event.get():
+          if event.type == pygame.QUIT:
+             pygame.quit()
+             sys.exit()
 
-    #Gerar novos inimigos, conforme variavel de limite de inimigos
-    if len(enemy_g) < villa_a.max_enemy:
-            enemy_new = Enemy(random.randint(-100,-1),random.randint(0,719),enemy_speed) ####### PRECISO GERAR INIMIGOS FORA DA TELA, EM QUALQUER POSIÇÃO FORA DA TELA
-            enemy_g.add(enemy_new)
+        #Gerar novos inimigos, conforme variavel de limite de inimigos
+        if len(enemy_g) <= 0:
+            while len(enemy_g) < villa_a.max_enemy:
+                coordx = random.randint(-50,1320)
+                coordy = random.randint(-50,770)
+                colliderect = pygame.Rect(0,0,1280,720)
+                if not colliderect.collidepoint(coordx,coordy):
+                    enemy_new = Enemy(coordx,coordy,enemy_speed)
+                    enemy_g.add(enemy_new)
 
-    #Detectar colisão dos inimigos com a Villa
-    sprites = pygame.sprite.spritecollide(villa_a,enemy_g,False)
-    if sprites:
-        for enemy in sprites:
-            villa_a.health -= enemy.damage
-            enemy.kill()
+        #Detectar colisão dos inimigos com a Villa
+        sprites = pygame.sprite.spritecollide(villa_a,enemy_g,False)
+        if sprites:
+            for enemy in sprites:
+                villa_a.health -= enemy.damage
+                enemy.kill()
 
-    #Detecta se o tiro está dentro da Villa
-    if len(enemy_g) > 0:
+        #Detecta se o tiro está dentro da Villa
         villa_colisao = pygame.sprite.spritecollide(villa_a,shoot_g,False)
         if villa_colisao:
             villa_col = True
         else:
             villa_col = False
 
-    #Impede que os tiros saiam do raio
-    for shoots in shoot_g:
-        if math.sqrt(pow(Tela_H//2 - shoots.rect.x, 2) + pow(Tela_V//2 - shoots.rect.y, 2)) > villa_a.radius:
-            shoots.kill()
+        #Impede que os tiros saiam do raio
+        for shoots in shoot_g:
+            if math.sqrt(pow(Tela_H//2 - shoots.rect.x, 2) + pow(Tela_V//2 - shoots.rect.y, 2)) > villa_a.radius:
+                shoots.kill()
 
-    #Desenhar sprites na tela
-    shoot_g.draw(tela)
-    villa_g.draw(tela)
-    upgrades_g.draw(tela)
-    if len(enemy_g) > 0:
-        enemy_g.draw(tela)
-    
-
-    
-
-    #atualizar posição dos inimigos para irem em direção ao centro e tiro para ir em direção aos inimigos
-    shoot_g.update(shoot_speed)
-    if len(enemy_g) > 0:
-        enemy_g.update()
-    villa_g.update()
-    upgrades_g.update()
-
-    #Atualizar informações de defesa contra os inimigos
-    if len(enemy_g) > 0:
-        for enemy in enemy_g:
-            villa_a.Shoot_start(enemy)
-
-    #Mostrar texto do Score na tela
-    score_text = font.render('Score: ' + str(score), True, (100,100,100))
-    tela.blit(score_text, (Tela_V - score_text.get_width()-50, 10))
-    money_text = font.render('Money: ' + str(money), True, (100,100,100))
-    tela.blit(money_text,(Tela_V - money_text.get_width()-50,50))
-    
+        #Desenhar sprites na tela
+        shoot_g.draw(tela)
+        villa_g.draw(tela)
+        upgrades_g.draw(tela)
+        if len(enemy_g) > 0:
+            enemy_g.draw(tela)
         
 
-    #Definir FPS
-    frames.tick(60)
+        
 
-    #Atualizar tela
-    pygame.display.update()
+        #atualizar posição dos inimigos para irem em direção ao centro e tiro para ir em direção aos inimigos
+        shoot_g.update(shoot_speed)
+        if len(enemy_g) > 0:
+            enemy_g.update()
+        villa_g.update()
+        upgrades_g.update()
+
+        #Atualizar informações de defesa contra os inimigos
+        if len(enemy_g) > 0:
+            for enemy in enemy_g:
+                villa_a.Shoot_start(enemy)
+
+        #Mostrar texto do Score na tela
+        score_text = font.render('Score: ' + str(score), True, (100,100,100))
+        tela.blit(score_text, (Tela_V - score_text.get_width()-50, 10))
+        money_text = font.render('Money: ' + str(money), True, (100,100,100))
+        tela.blit(money_text,(Tela_V - money_text.get_width()-50,50))
+
+        for enemy in enemy_g:
+            debug_damage = font.render('Damage:' + str(enemy.damage), True, (0,100,100))
+            tela.blit(debug_damage,(300,350))
+            debug_value = font.render('Value:' + str(enemy.value), True, (0,100,100))
+            tela.blit(debug_value,(300,300))
+            
+
+        #Definir FPS
+        frames.tick(60)
+
+        #Atualizar tela
+        pygame.display.update()
+        #definições para o pygbag
+        await asyncio.sleep(0)
+
+#Começar o jogo
+asyncio.run(main())
 
