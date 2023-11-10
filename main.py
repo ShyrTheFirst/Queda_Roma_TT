@@ -174,7 +174,7 @@ class Shoot(pygame.sprite.Sprite):
             enemy_pos = [self.enemy.rect.x, self.enemy.rect.y]
             self_pos = self.rect
             dxdef,dydef = enemy_pos[0] - self_pos[0] , enemy_pos[1] - self_pos[1]
-            distdef = (dxdef**2 + dydef**2) ** 0.5
+            distdef = math.sqrt(dxdef**2 + dydef**2)
             if distdef != 0:
                 dxdef,dydef = dxdef/distdef, dydef/distdef
             dxdef_final, dydef_final = dxdef*self.speed, dydef*self.speed
@@ -205,7 +205,7 @@ class Upgrades(pygame.sprite.Sprite):
         global money, score, shoot_speed
         if self.typeup == 'Speed':
             self.image = pygame.image.load(r'botao_speed.png')
-            custo_text = font.render('Custo: ' + str(self.custo), True, (100,100,100))
+            custo_text = font.render('Cost: ' + str(self.custo), True, (100,100,100))
             tela.blit(custo_text, (self.rect.x + 70, self.rect.y))
             '''score_text = font.render('Score: ' + str(score), True, (100,100,100))
     tela.blit(score_text, (Tela_V - score_text.get_width()-50, 10))
