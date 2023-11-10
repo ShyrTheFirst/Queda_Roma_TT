@@ -169,7 +169,7 @@ class Shoot(pygame.sprite.Sprite):
 class Upgrades(pygame.sprite.Sprite):
     def __init__(self,villa,x,y,typeup,custo=5):
         super().__init__()
-        self.image = pygame.image.load(r'botao.png').convert_alpha()
+        self.image = pygame.image.load(r'botao_speed.png').convert_alpha()
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -179,32 +179,51 @@ class Upgrades(pygame.sprite.Sprite):
         self.custo = custo
         
 
-    def update(self):
+    def update(self):#################################################### MELHORAR A IDENTIFICAÇÃO DE CADA AÇÂO DESSA AREA
         global money, score, shoot_speed
         if self.typeup == 'Speed':
-            self.image = pygame.image.load(r'botao_speed.png')
-            custo_text = font.render('Cost: ' + str(self.custo), True, (100,100,100))
-            tela.blit(custo_text, (self.rect.x + 70, self.rect.y))
-            if self.custo > money:
-                pass ####Mudar imagem dos botoes
+            if money < self.custo:
+                self.image = pygame.image.load(r'botao_speed_money.png')
+            else:
+                mousepos = pygame.mouse.get_pos()
+                if self.rect.collidepoint(mousepos):
+                    self.image = pygame.image.load(r'botao_speed_over.png')
+                else:
+                    self.image = pygame.image.load(r'botao_speed.png')
+                
+            custo_text = font.render('Shoot speed upgrade cost: ' + str(self.custo), True, (100,0,0))
+            tela.blit(custo_text, (10, 10))
+            
         if self.typeup == 'Radius':
-            self.image = pygame.image.load(r'botao_radius.png')
-            custo_text = font.render('Cost: ' + str(self.custo), True, (100,100,100))
-            tela.blit(custo_text, (self.rect.x + 70, self.rect.y))
-            if self.custo > money:
-                pass ####Mudar imagem dos botoes
+            if money < self.custo:
+                self.image = pygame.image.load(r'botao_radius_money.png')
+            else:
+                mousepos = pygame.mouse.get_pos()
+                if self.rect.collidepoint(mousepos):
+                    self.image = pygame.image.load(r'botao_radius_over.png')
+                else:
+                    self.image = pygame.image.load(r'botao_radius.png')
+                
+                
+            custo_text = font.render('Radius upgrade cost: ' + str(self.custo), True, (100,0,0))
+            tela.blit(custo_text, (10, 40))
+            
         if self.typeup == 'Health':
-            self.image = pygame.image.load(r'botao_health.png')
-            custo_text = font.render('Cost:' + str(self.custo), True, (100,100,100))
-            tela.blit(custo_text, (self.rect.x +70, self.rect.y))
-            if self.custo > money:
-                pass ####Mudar imagem dos botoes
+            if money < self.custo:
+                self.image = pygame.image.load(r'botao_health_money.png')
+            else:
+                mousepos = pygame.mouse.get_pos()
+                if self.rect.collidepoint(mousepos):
+                    self.image = pygame.image.load(r'botao_health_over.png')
+                else:
+                    self.image = pygame.image.load(r'botao_health.png')
+                
+            custo_text = font.render('Full health regen cost:' + str(self.custo), True, (100,0,0))
+            tela.blit(custo_text, (10, 70))
 
-        
-
-        ####CRIAR CUSTO PARA BLITAR AO LADO DE CADA BOTAO#### rect.x + 70 deve ser suficiente, rect.y pode ser o mesmo ou + metade do tamanho do botao para ficar ao meio da imagem
             
         if pygame.mouse.get_pressed() == (1,0,0):
+            on_click = pygame.image.load(r'on_click.png')
             mousepos = pygame.mouse.get_pos()
             if self.rect.collidepoint(mousepos):
                 if self.typeup == 'Speed' :
@@ -213,6 +232,7 @@ class Upgrades(pygame.sprite.Sprite):
                         self.custo += self.nivel ** 2
                         self.nivel += 1
                         shoot_speed += 1
+                        tela.blit(on_click,(self.rect.x,self.rect.y))
                         ####RETORNO VISUAL E SONORO DA COMPRA
                     elif money < self.custo:
                         pass
@@ -223,6 +243,7 @@ class Upgrades(pygame.sprite.Sprite):
                         self.custo += self.nivel ** 2
                         self.nivel += 1
                         self.villa.radius += 10
+                        tela.blit(on_click,(self.rect.x,self.rect.y))
                         ####RETORNO VISUAL E SONORO DA COMPRA
                     elif money < self.custo:
                         pass
@@ -233,6 +254,7 @@ class Upgrades(pygame.sprite.Sprite):
                         self.custo += self.nivel ** 2
                         self.nivel += 1
                         self.villa.health += self.villa.max_health
+                        tela.blit(on_click,(self.rect.x,self.rect.y))
                         ####RETORNO VISUAL E SONORO DA COMPRA
                     elif money < self.custo:
                         pass
@@ -248,10 +270,11 @@ class Upgrades(pygame.sprite.Sprite):
 #Inicializar classes
 villa_a = Villa()
 villa_g.add(villa_a)
-
-upgrades_a1 = Upgrades(villa_a,10,10, 'Speed')
-upgrades_a2 = Upgrades(villa_a,10,80, 'Radius')
-upgrades_a3 = Upgrades(villa_a,10,150, 'Health', custo=1)
+pos_vila_centerx = (Tela_H//2) - 40
+pos_vila_centery = (Tela_V//2) - 40
+upgrades_a1 = Upgrades(villa_a,Tela_H//2-40,Tela_V//2-40, 'Speed')
+upgrades_a2 = Upgrades(villa_a,Tela_H//2+10,Tela_V//2-40, 'Radius')
+upgrades_a3 = Upgrades(villa_a,Tela_H//2+10,Tela_V//2+10, 'Health', custo=1)
 upgrades_g.add(upgrades_a1)
 upgrades_g.add(upgrades_a2)
 upgrades_g.add(upgrades_a3)
@@ -261,7 +284,7 @@ async def main():
     #Rodar loop do jogo
     while running:    
         #Preencher tela do jogo
-        tela.fill((100,0,0)) 
+        tela.fill((86,125,70)) 
 
         #Detectar eventos do pygame
         for event in pygame.event.get():
@@ -321,16 +344,10 @@ async def main():
                 villa_a.Shoot_start(enemy)
 
         #Mostrar texto do Score na tela
-        score_text = font.render('Score: ' + str(score), True, (100,100,100))
+        score_text = font.render('Score: ' + str(score), True, (100,0,0))
         tela.blit(score_text, (Tela_V - score_text.get_width()-50, 10))
-        money_text = font.render('Money: ' + str(money), True, (100,100,100))
+        money_text = font.render('Money: ' + str(money), True, (100,0,0))
         tela.blit(money_text,(Tela_V - money_text.get_width()-50,50))
-
-        for enemy in enemy_g:
-            debug_damage = font.render('Damage:' + str(enemy.damage), True, (0,100,100))
-            tela.blit(debug_damage,(300,350))
-            debug_value = font.render('Value:' + str(enemy.value), True, (0,100,100))
-            tela.blit(debug_value,(300,300))
             
 
         #Definir FPS
