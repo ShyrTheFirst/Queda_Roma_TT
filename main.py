@@ -295,8 +295,8 @@ async def main():
         #Gerar novos inimigos, conforme variavel de limite de inimigos
         if len(enemy_g) <= 0:
             while len(enemy_g) < villa_a.max_enemy:
-                coordx = random.randint(-50,1320)
-                coordy = random.randint(-50,770)
+                coordx = random.randint(0,1320)
+                coordy = random.randint(0,770)
                 colliderect = pygame.Rect(0,0,1280,720)
                 if not colliderect.collidepoint(coordx,coordy):
                     enemy_new = Enemy(coordx,coordy,enemy_speed)
